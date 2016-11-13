@@ -2,32 +2,36 @@ package main
 
 import (
 	"fmt"
-	"github.com/alecthomas/kingpin"
 	"net"
+	"os"
 )
 
-var (
-	addr = kingpin.Flag("address", "listener host:port").Required().String()
-)
+
 
 func main() {
-	kingpin.Parse()
+	addr := os.Getenv("STATSD_SINK_ADDR")
+	if addr == "" {
+		fmt.Println("Unable to read STATSD_SINK_ADDR from environment")
+		os.Exit(1)
+	}
 
-	listenAddr, err := net.ResolveUDPAddr("udp", *addr)
+	listenAddr, err := net.ResolveUDPAddr("udp", addr)
 	if err != nil {
 		fmt.Println(err.Error())
+		os.Exit(1)
 	}
 
 	ln, err := net.ListenUDP("udp", listenAddr)
 	if err != nil {
 		fmt.Println(err.Error())
+		os.Exit(1)
 	}
 
 	buf := make([]byte, 1024)
 
 	for {
 		n, _, err := ln.ReadFromUDP(buf)
-		fmt.Println(string(buf[0:n]))
+		fmt.Print(string(buf[0:n]))
 
 		if err != nil {
 			fmt.Println("Error: ", err)
